@@ -1,0 +1,14 @@
+build/
+cec/
+rescue/
+install-log.txt
+start-failure-*.txt
+undo-home.txt
+*.keystore
+*.jks
+key.properties
+tvs.txt
+install-royal.bat
+install-all.bat
+update-url.txt
+*.apk

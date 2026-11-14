@@ -1,0 +1,128 @@
+# يبني رونق تلقائياً مع كل رفع، ويكشف أخطاء البناء.
+# ومع كل وسم v* (مثل v3.7.0) ينشر إصداراً فيه الـ APK وملف update.json
+# اللي يقرأه «التحديث التلقائي» بالستريمر.
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      UPDATE_URL: https://github.com/${{ github.repository }}/releases/latest/download/update.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Version from pubspec
+        id: ver
+        run: |
+          v=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "name=${v%%+*}" >> "$GITHUB_OUTPUT"
+          echo "code=${v##*+}" >> "$GITHUB_OUTPUT"
+          echo "Version ${v}"
+
+      - name: Tag must match pubspec version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if [ "${GITHUB_REF_NAME#v}" != "${{ steps.ver.outputs.name }}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match pubspec version ${{ steps.ver.outputs.name }}"; exit 1
+          fi
+
+      # نفس مفتاح التوقيع اللي بحاسبتك، حتى التحديث يتثبت فوق النسخة الحالية بدون حذف
+      - name: Signing key
+        env:
+          KEY_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+        run: |
+          mkdir -p ~/.android
+          if [ -n "$KEY_B64" ]; then
+            echo "$KEY_B64" | base64 -d > ~/.android/debug.keystore
+            echo "Using your signing key."
+          else
+            echo "::warning::Secret ANDROID_DEBUG_KEYSTORE_B64 is missing: this APK cannot update the one on your TV. Run github-setup.bat."
+          fi
+
+      - name: Create Android project
+        run: flutter create --org com --project-name rawnaq --platforms android ../app
+
+      - name: Copy sources and fonts
+        run: python3 tools/prepare_build.py . ../app
+
+      # مفتاح النشر الخاص (إذا محفوظ بالـ Secrets) يتقدّم على مفتاح التطوير
+      - name: Release signing key
+        env:
+          RK_B64: ${{ secrets.RAWNAQ_KEYSTORE_B64 }}
+          RK_PASS: ${{ secrets.RAWNAQ_KEY_PASSWORD }}
+        run: |
+          if [ -n "$RK_B64" ] && [ -n "$RK_PASS" ]; then
+            echo "$RK_B64" | base64 -d > "$RUNNER_TEMP/rawnaq-release.jks"
+            printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=rawnaq\nkeyPassword=%s\n' "$RUNNER_TEMP/rawnaq-release.jks" "$RK_PASS" "$RK_PASS" > ../app/android/key.properties
+            echo "Using your private release key."
+          else
+            echo "::warning::Release key secrets are missing; building with the development key. Run github-setup.bat."
+          fi
+
+      - name: Packages
+        working-directory: ../app
+        run: flutter pub get
+
+      # يوقف البناء عند أي خطأ برمجي (التنبيهات والملاحظات ما توقفه)
+      - name: Analyze
+        working-directory: ../app
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib
+
+      - name: Build APK (ARM)
+        working-directory: ../app
+        run: flutter build apk --release --target-platform android-arm,android-arm64
+
+      - name: Collect
+        run: |
+          mkdir -p dist
+          cp ../app/build/app/outputs/flutter-apk/app-release.apk "dist/rawnaq-${{ steps.ver.outputs.name }}.apk"
+          python3 - <<'PY'
+          import json, os, hashlib
+          name = "${{ steps.ver.outputs.name }}"
+          notes = [l.strip() for l in open("release-notes.txt", encoding="utf-8") if l.strip()]
+          apk = f"dist/rawnaq-{name}.apk"
+          data = {
+              "version": name,
+              "apk": f"https://github.com/${{ github.repository }}/releases/download/v{name}/rawnaq-{name}.apk",
+              "notes": notes,
+              "size": os.path.getsize(apk),
+              "sha256": hashlib.sha256(open(apk, "rb").read()).hexdigest(),
+          }
+          json.dump(data, open("dist/update.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+          print(json.dumps(data, ensure_ascii=False))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rawnaq-${{ steps.ver.outputs.name }}
+          path: dist/
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: رونق ${{ steps.ver.outputs.name }}
+          body_path: release-notes.txt
+          files: |
+            dist/rawnaq-${{ steps.ver.outputs.name }}.apk
+            dist/update.json
