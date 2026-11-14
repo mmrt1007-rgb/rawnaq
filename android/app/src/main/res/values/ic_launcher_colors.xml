@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_bg">#0B2F25</color>
-    <color name="rawnaq_splash">#04140F</color>
+    <color name="rawnaq_splash">#072019</color>
+    <color name="rawnaq_splash_day">#F3ECDD</color>
 </resources>

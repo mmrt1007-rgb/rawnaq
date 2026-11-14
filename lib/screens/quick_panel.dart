@@ -494,11 +494,11 @@ class _QuickPanelState extends State<_QuickPanel> {
         ),
         const SizedBox(height: 20),
         Expanded(
-          child: SingleChildScrollView(
+          child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
             clipBehavior: Clip.none,
             padding: const EdgeInsets.all(5),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
-          ),
+          )),
         ),
         const SizedBox(height: 12),
         FitText('رجوع: للوحة السريعة', alignment: Alignment.center, style: Fonts.body(16, p.muted)),
@@ -571,7 +571,7 @@ class _QuickPanelState extends State<_QuickPanel> {
     final mode = s.cfg.s('theme.mode');
     final style = s.cfg.s('ui.style');
     return _detail(p, title: 'الوضع والنمط', children: [
-      for (final (id, label) in const [('auto', 'تلقائي حسب الوقت'), ('day', 'نهاري دائماً'), ('night', 'ليلي دائماً')])
+      for (final (id, label) in const [('auto', 'مع الشروق والغروب'), ('day', 'نهاري دائماً'), ('night', 'ليلي دائماً')])
         FocusTap(
           autofocus: id == mode,
           onTap: () => s.set('theme.mode', id),

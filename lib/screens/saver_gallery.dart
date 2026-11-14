@@ -81,11 +81,11 @@ class _SaverGalleryScreenState extends State<SaverGalleryScreen> {
                       padding: const EdgeInsets.all(28),
                       child: NavZone(
                         node: _panel,
-                        child: SingleChildScrollView(
+                        child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                           clipBehavior: Clip.none,
                           padding: const EdgeInsets.all(5),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _controls(context, current)),
-                        ),
+                        )),
                       ),
                     ),
                   ),

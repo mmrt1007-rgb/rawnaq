@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../arabic.dart';
 import '../backgrounds.dart';
 import '../brand.dart' show RawnaqLoader, loaderWriteSeconds;
+import 'home_slides.dart';
 import '../config.dart';
 import '../platform.dart';
 import '../prayer.dart';
@@ -210,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: Fonts.body(18, p.muted)),
                     const SizedBox(height: 24),
                     Expanded(
-                      child: SingleChildScrollView(
+                      child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                         clipBehavior: Clip.none,
                         padding: const EdgeInsets.all(4),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -250,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               },
                             ),
                         ]),
-                      ),
+                      )),
                     ),
                   ]),
                 ),
@@ -268,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         // موافق للدخول والتطبيق، ورجوع وحده يطلع — وما يطلع التركيز برا القسم أبداً.
                         child: NavZone(
                           node: _content$,
-                          child: SingleChildScrollView(
+                          child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                             controller: _scroll,
                             clipBehavior: Clip.none,
                             padding: const EdgeInsets.fromLTRB(52, 64, 52, 32),
@@ -277,7 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: _content(context, _section),
                             ),
-                          ),
+                          )),
                         ),
                       ),
                     ),
@@ -365,9 +366,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         cStep('قوة التغبيش', 'ui.blur', 0, 60, 2, fmtPx),
         cStep('كثافة الزجاج', 'ui.tint', 0, 1, 0.05, fmtPct),
       ],
-      cChoice<String>('وضع الثيم', 'theme.mode', const [('auto', 'تلقائي حسب الوقت'), ('day', 'نهاري دائماً'), ('night', 'ليلي دائماً')]),
-      cChoice<int>('بداية الثيم النهاري', 'theme.dayStart', hours),
-      cChoice<int>('بداية الثيم الليلي', 'theme.nightStart', hours),
+      cChoice<String>('وضع الثيم', 'theme.mode', const [('auto', 'مع الشروق والغروب'), ('hours', 'حسب ساعات أحددها'), ('day', 'نهاري دائماً'), ('night', 'ليلي دائماً')],
+          sub: s.cfg.s('theme.mode') == 'auto' ? 'النهار من الشروق للغروب الحقيقي بمدينتك، ويتبدل وحده كل يوم' : null),
+      if (s.cfg.s('theme.mode') == 'hours') ...[
+        cChoice<int>('بداية الثيم النهاري', 'theme.dayStart', hours),
+        cChoice<int>('بداية الثيم الليلي', 'theme.nightStart', hours),
+      ],
       SectionTitle('ألوان الثيم النهاري'),
       ..._colors('day'),
       SectionTitle('ألوان الثيم الليلي'),
@@ -491,6 +495,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       cStep('الهامش الجانبي', 'home.padX', 32, 260, 4, fmtPx),
       cStep('الهامش العلوي والسفلي', 'home.padY', 24, 180, 4, fmtPx),
       SectionTitle('خلفية الواجهة'),
+      NavRow(
+        title: 'صور الواجهة المتغيرة',
+        subtitle: c.b('home.slides') ? 'مفعّلة فوق كل الثيمات، وتتلون مع الثيم' : 'صور تتبدل بهدوء خلف الواجهة، بكل الثيمات',
+        value: c.b('home.slides') ? '${Ar.n(HomeSlides.paths().length)} صورة' : 'مطفأة',
+        onTap: () => Navigator.push(context, fade(const HomeSlidesScreen())),
+      ),
       cChoice<String>('نوع الخلفية', 'home.bg', const [('aurora', 'أورورا ناعمة'), ('solid', 'لون الثيم'), ('gradient', 'تدرج'), ('art', 'فنية'), ('image', 'صورة'), ('slideshow', 'عرض صور متتابع')]),
       if (bg == 'art') cChoice<String>('التصميم الفني', 'home.art', ArtStyles.all),
       if (bg == 'image') ...[
@@ -718,7 +728,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Widget> _walls(BuildContext context) {
     final s = AppState.I;
     final p = s.palette;
+    final c = s.cfg;
     return [
+      NavRow(
+        title: 'صور الواجهة المتغيرة',
+        subtitle: c.b('home.slides') ? 'مفعّلة فوق كل الثيمات، وتتلون مع الثيم' : 'صور تتبدل بهدوء خلف الواجهة، بكل الثيمات',
+        value: c.b('home.slides') ? '${Ar.n(HomeSlides.paths().length)} صورة' : 'مطفأة',
+        onTap: () => Navigator.push(context, fade(const HomeSlidesScreen())),
+      ),
       NavRow(
         autofocus: false,
         title: 'إدارة الخلفيات',
@@ -760,7 +777,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (v != null) s.set('misc.city', v.trim());
         },
       ),
-      NavRow(title: 'تحديث الطقس الآن', onTap: s.refreshWeather),
+      cChoice<int>('تحديث الطقس', 'weather.refresh', const [(10, 'كل ١٠ دقائق'), (15, 'كل ربع ساعة'), (30, 'كل نص ساعة'), (60, 'كل ساعة')],
+          sub: WeatherHub.lastUpdate == null ? 'الحالة الحية من Open-Meteo' : 'آخر تحديث ${Ar.time(WeatherHub.lastUpdate!)}'),
+      NavRow(title: 'تحديث الطقس الآن', onTap: () => WeatherHub.refreshAll()),
       SectionTitle('الطقس الحي'),
       NavRow(title: 'شاشة الطقس الحية', subtitle: 'الساعات والأيام العشرة وكل التفاصيل', onTap: () => Navigator.push(context, fade(const WeatherScreen()))),
       NavRow(title: 'مدني', subtitle: 'ترتيب المدن والتنقل بينها يمين ويسار', value: Ar.n(WeatherHub.cities.length), onTap: () => Navigator.push(context, fade(const CitiesScreen()))),
@@ -1007,7 +1026,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         sample: (id, hi) => _PaceSample(id: id, lit: hi || c.s('loader.speed') == id),
       ),
       cToggle('الحلقة مع التحميل', 'loader.ring', sub: 'تمشي مع القلم وما تسبق نسبة التحميل الحقيقية'),
-      cToggle('عند الإقلاع: انتظر الكتابة', 'loader.waitBoot', sub: 'الواجهة تفتح بعد ما يكمل القلم النقاط (بحد أقصى ${secs(c.s('loader.speed'))} وثانية ونص)'),
+      cChoice<String>('عند الإقلاع: انتظر الكتابة', 'loader.waitBoot', const [('cold', 'أول تشغيل فقط'), ('always', 'دائماً'), ('off', 'لا تنتظر')], sub: 'أول تشغيل: القلم يكمل الاسم، وبعدها الواجهة تفتح فوراً'),
       cToggle('رأس القلم المضيء', 'loader.pen', sub: 'نقطة نور تمشي مع الريشة، وتتنفس بهدوء إذا التحميل تأخر'),
       cToggle('لمعة الحبر الطري', 'loader.wet', sub: 'الحبر يلمع خلف القلم لحظة ويجف'),
       cToggle('اللمعة الختامية', 'loader.shine', sub: 'لمعة تمر على الاسم بعد آخر نقطة'),

@@ -36,7 +36,7 @@ class Config {
 
   static const Map<String, Object> _base = {
     // ---- الثيم ----
-    'theme.mode': 'auto', // auto | day | night
+    'theme.mode': 'auto', // auto (الشروق والغروب) | hours (حسب الساعات) | day | night
     'theme.dayStart': 7,
     'theme.nightStart': 19,
     'theme.preset': 'emerald',
@@ -111,7 +111,7 @@ class Config {
     'loader.wet': true, // لمعة الحبر الطري خلف القلم
     'loader.ring': true, // الحلقة تمشي مع التحميل
     'loader.shine': true, // اللمعة الختامية
-    'loader.waitBoot': true, // شاشة الإقلاع تنتظر اكتمال الكتابة
+    'loader.waitBoot': 'cold', // انتظار اكتمال الكتابة: cold = أول تشغيل للجهاز فقط · always · off
     'home.showSearch': true,
     'home.showBell': true,
     'home.showProfile': true,
@@ -120,6 +120,7 @@ class Config {
     // ---- الطقس الحي (فيكما صفحة ١٤) ----
     'weather.cities': '', // المدن المحفوظة (JSON)
     'weather.auto': true, // الموقع الحالي من شبكة البيت أول مدينة
+    'weather.refresh': 15, // دقائق بين كل تحديث للطقس (٥–٦٠)
     'weather.motion': 'full', // full | light | off
     'weather.glass': true, // قطرات وتكاثف على الزجاج
     'weather.homeChip': true, // زر الطقس الحي بأعلى الواجهة
@@ -203,6 +204,16 @@ class Config {
     'home.art': 'dunes',
     'home.image': '',
     'home.dim': 0.35,
+    // صور الواجهة المتغيرة (فيكما صفحة ١٦ رقم ١٥–١٧): تشتغل فوق أي ثيم، والثيم يتحكم بالطبقة بس
+    'home.slides': false,
+    'home.slides.source': 'all', // all | library (مكتبة رونق) | mine (صوري) | pick (أختارها)
+    'home.slides.cats': '', // فئات المكتبة للواجهة (فارغ = كل الفئات المفعّلة)
+    'home.slides.set': '', // أسماء الصور المختارة مفصولة بـ | · فارغ = كل الصور · none = ولا صورة
+    'home.slides.interval': 60, // ثواني
+    'home.slides.motion': 'kenburns', // fade | kenburns
+    'home.slides.shuffle': true,
+    'home.slides.tint': true, // لون خلفية الثيم فوق الصورة (وإلا أسود)
+    'home.slides.dim': 0.35,
     'home.padX': 112.0,
     'home.padY': 72.0,
 
@@ -303,7 +314,7 @@ class Config {
     'walls.days': 7, // التجديد كل كم يوم (أسبوعياً افتراضياً)
     'walls.hours': 12, // (قديم، ما يُستعمل)
     'walls.last': 0,
-    'walls.cats': 'landscapes,mountains,coasts,water,plants,mammals,birds,food,astronomy,mosques',
+    'walls.cats': 'landscapes,mountains,coasts,water,waterfalls,sunsets,plants,night,astronomy,mosques',
     'saver.showCredit': true, // اسم المصوّر والرخصة أسفل شاشة السكون
 
     // ---- عام ----

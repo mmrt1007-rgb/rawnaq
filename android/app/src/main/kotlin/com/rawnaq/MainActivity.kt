@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
@@ -138,6 +139,21 @@ class MainActivity : FlutterActivity() {
                     val v = call.argument<Int>("value") ?: 0
                     runCatching { am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, v, android.media.AudioManager.FLAG_SHOW_UI) }
                     result.success(am.getStreamVolume(android.media.AudioManager.STREAM_MUSIC))
+                }
+                "splashInfo" -> {
+                    // ثيم شاشة رونق الأولى المحفوظ (نهاري فقط إذا أندرويد ١٣+ يگدر يطبقه) + مدة تشغيل الجهاز
+                    val day = Build.VERSION.SDK_INT >= 33 && getSharedPreferences("rawnaq_splash", MODE_PRIVATE).getBoolean("day", false)
+                    result.success(mapOf("day" to day, "uptime" to SystemClock.elapsedRealtime()))
+                }
+                "setSplashTheme" -> {
+                    // يخلي أول لقطة بالتشغيل الجاي بنفس ثيم رونق (ليلي/نهاري)
+                    val day = call.argument<Boolean>("day") ?: false
+                    var ok = false
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        ok = runCatching { splashScreen.setSplashScreenTheme(if (day) R.style.LaunchThemeDay else R.style.LaunchTheme) }.isSuccess
+                    }
+                    getSharedPreferences("rawnaq_splash", MODE_PRIVATE).edit().putBoolean("day", ok && day).apply()
+                    result.success(ok)
                 }
                 "sleepNow" -> {
                     // يطفي الشاشة (وضع الاستعداد) إذا صلاحية مدير الجهاز مفعلة من install.bat

@@ -92,7 +92,7 @@ class _AppsScreenState extends State<AppsScreen> {
                   final bleed = w * (fs - 1) / 2 + s.cfg.d('tile.ringWidth') + 14;
                   w = (box.maxWidth - bleed * 2 - gap * (cols - 1)) / cols;
                   final m = TileMetrics(w);
-                  return SingleChildScrollView(
+                  return AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                     clipBehavior: Clip.none,
                     padding: EdgeInsets.all(m.bleed),
                     child: Wrap(spacing: gap, runSpacing: gap, children: [
@@ -123,7 +123,7 @@ class _AppsScreenState extends State<AppsScreen> {
                           ),
                         ),
                     ]),
-                  );
+                  ));
                 }),
               ),
               if (pickMode)

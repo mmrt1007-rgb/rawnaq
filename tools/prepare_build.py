@@ -18,14 +18,26 @@ shutil.copytree(os.path.join(src, "lib"), os.path.join(out, "lib"))
 shutil.copytree(os.path.join(src, "android", "app", "src", "main"), os.path.join(out, "android", "app", "src", "main"), dirs_exist_ok=True)
 shutil.rmtree(os.path.join(out, "test"), ignore_errors=True)
 
-# 1b) release signing block (reads android/key.properties when the build provides one)
-for name, block in (("build.gradle.kts", "signing.gradle.kts.txt"), ("build.gradle", "signing.gradle.txt")):
-    g = os.path.join(out, "android", "app", name)
-    if os.path.exists(g):
-        txt = open(g, encoding="utf-8").read()
-        if "RAWNAQ_SIGNING" not in txt:
-            open(g, "a", encoding="utf-8").write(open(os.path.join(src, "tools", block), encoding="utf-8").read())
-        break
+# 1b) release signing (Flutter's documented way): imports at the top, key.properties read before android { },
+#     signingConfigs inside android { }. Works on old AGP and on AGP 9's new DSL.
+gk = os.path.join(out, "android", "app", "build.gradle.kts")
+gg = os.path.join(out, "android", "app", "build.gradle")
+if os.path.exists(gk):
+    txt = open(gk, encoding="utf-8").read()
+    if "RAWNAQ_SIGNING3" not in txt:
+        top, inside = re.split(r"#--INSIDE-ANDROID--\r?\n", open(os.path.join(src, "tools", "signing.gradle.kts.txt"), encoding="utf-8").read())
+        m = re.search(r"(?m)^android\s*\{[^\n]*\n", txt)
+        if m:
+            txt = txt[:m.start()] + top + m.group(0) + inside + txt[m.end():]
+            txt = re.sub(r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)', 'signingConfig = signingConfigs.findByName("rawnaqRelease") ?: signingConfigs.getByName("debug")', txt)
+            txt = "import java.io.FileInputStream\nimport java.util.Properties\n" + txt
+            open(gk, "w", encoding="utf-8").write(txt)
+        else:
+            print("  [--] android { } not found in build.gradle.kts; using the development key")
+elif os.path.exists(gg):
+    txt = open(gg, encoding="utf-8").read()
+    if "RAWNAQ_SIGNING" not in txt:
+        open(gg, "a", encoding="utf-8").write(open(os.path.join(src, "tools", "signing.gradle.txt"), encoding="utf-8").read())
 
 # 2) build info (default update link)
 url = os.environ.get("UPDATE_URL", "").strip()

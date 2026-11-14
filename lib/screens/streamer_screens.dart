@@ -509,7 +509,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final _q = TextEditingController();
-  final _field = FocusNode();
+  late final _field = tvFieldNode(_q);
 
   @override
   void dispose() {
@@ -624,7 +624,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 height: m.totalHeight + m.bleed * 2,
                 child: q.trim().isNotEmpty && res.isEmpty
                     ? const EmptyState(icon: Lu.searchX, title: 'ما لكينا تطبيق بهذا الاسم', sub: 'جرّب اسم ثاني، أو ابحث بكوكل وبالصوت من تحت', row: true)
-                    : ListView(
+                    : AxisClip(axis: Axis.horizontal, child: ListView(
                   scrollDirection: Axis.horizontal,
                   clipBehavior: Clip.none,
                   children: [
@@ -637,7 +637,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
                   ],
-                ),
+                )),
               ),
               const Spacer(),
               if (q.trim().isNotEmpty)
@@ -737,7 +737,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         icon: Lu.bellRing,
         left: SysCard(
           padding: const EdgeInsets.fromLTRB(32, 28, 32, 20),
-          child: SingleChildScrollView(
+          child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
             clipBehavior: Clip.none,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
             FitText('تصفية', style: Fonts.body(22, p.ink, weight: FontWeight.w600)),
@@ -769,7 +769,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               }, icon: Lu.trash)]),
             ),
           ]),
-          ),
+          )),
         ),
         right: list.isEmpty
             ? [

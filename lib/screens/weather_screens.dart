@@ -1184,7 +1184,7 @@ class _CitiesScreenState extends State<CitiesScreen> {
               ]),
               const SizedBox(height: 34),
               Expanded(
-                child: GridView.builder(
+                child: AxisClip(axis: Axis.vertical, child: GridView.builder(
                   clipBehavior: Clip.none,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 28, crossAxisSpacing: 24, childAspectRatio: 422 / 330),
                   itemCount: count,
@@ -1203,7 +1203,7 @@ class _CitiesScreenState extends State<CitiesScreen> {
                       ),
                     );
                   },
-                ),
+                )),
               ),
               Center(
                 child: Container(
@@ -1317,6 +1317,7 @@ class AddCityScreen extends StatefulWidget {
 
 class _AddCityScreenState extends State<AddCityScreen> with SingleTickerProviderStateMixin {
   final _q = TextEditingController();
+  late final _field = tvFieldNode(_q);
   late final AnimationController _radar = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
   Timer? _deb;
   List<WxCity> _res = [];
@@ -1360,6 +1361,7 @@ class _AddCityScreenState extends State<AddCityScreen> with SingleTickerProvider
   @override
   void dispose() {
     _q.dispose();
+    _field.dispose();
     _radar.dispose();
     _deb?.cancel();
     super.dispose();
@@ -1391,6 +1393,7 @@ class _AddCityScreenState extends State<AddCityScreen> with SingleTickerProvider
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                         TextField(
                           controller: _q,
+                          focusNode: _field,
                           autofocus: true,
                           onChanged: _search,
                           style: Fonts.body(30, p.ink, weight: FontWeight.w600),
@@ -1417,10 +1420,10 @@ class _AddCityScreenState extends State<AddCityScreen> with SingleTickerProvider
                                     Text(_q.text.trim().length >= 2 && !_busy ? (WeatherHub.offline ? 'الشبكة مقطوعة' : 'ما لگينا مدينة بهذا الاسم') : 'اكتب حرفين أو أكثر', style: Fonts.body(22, p.muted)),
                                   ]),
                                 )
-                              : ListView(clipBehavior: Clip.none, children: [
+                              : AxisClip(axis: Axis.vertical, child: ListView(clipBehavior: Clip.none, children: [
                                   for (final c in _res)
                                     SysRowLite(icon: Lu.mapPin, title: c.name, sub: c.region, onTap: () => _add(c)),
-                                ]),
+                                ])),
                         ),
                       ]),
                   ),

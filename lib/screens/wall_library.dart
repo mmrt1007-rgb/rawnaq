@@ -43,7 +43,7 @@ class WallLibraryScreen extends StatelessWidget {
         builder: (context, _) {
           final p = s.palette;
           final c = s.cfg;
-          final cats = c.s('walls.cats').split(',').where((e) => e.isNotEmpty).toSet();
+          final cats = WallpaperFetcher.enabled().map((e) => e.id).toSet();
           final autos = s.wallpapers.where((w) => w.split('/').last.startsWith('auto-')).toList().reversed.toList();
           final own = s.wallpapers.length - autos.length;
           final busy = WallpaperFetcher.status.value;
@@ -67,7 +67,7 @@ class WallLibraryScreen extends StatelessWidget {
                       radius: BorderRadius.circular(32),
                       padding: const EdgeInsets.all(22),
                       child: NavZone(
-                        child: SingleChildScrollView(
+                        child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                           clipBehavior: Clip.none,
                           padding: const EdgeInsets.all(5),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -120,7 +120,7 @@ class WallLibraryScreen extends StatelessWidget {
                               },
                             ),
                           ]),
-                        ),
+                        )),
                       ),
                     ),
                   ),

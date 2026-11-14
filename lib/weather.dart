@@ -10,11 +10,13 @@ import 'state.dart';
 
 // ═══════════════════ الطقس المختصر (شريط الواجهة وشاشة السكون) ═══════════════════
 
-/// حالة الطقس الحالية.
+/// حالة الطقس الحالية (للواجهة وشاشة السكون). تنبني من نفس توقعات شاشة الطقس،
+/// فالواجهة وشاشة الطقس يحچون نفس الحالة دائماً.
 class Weather {
   final String place;
   final int temp, max, min, code;
   final bool isDay;
+  final String? _sky, _desc;
 
   const Weather({
     required this.place,
@@ -23,22 +25,37 @@ class Weather {
     required this.min,
     required this.code,
     required this.isDay,
-  });
+    String? sky,
+    String? desc,
+  })  : _sky = sky,
+        _desc = desc;
 
-  /// وصف عربي لرموز الطقس (WMO).
-  String get description => wxDescription(code, isDay, 0);
+  factory Weather.fromForecast(Forecast f) => Weather(
+        place: f.city.name,
+        temp: f.temp,
+        code: f.code,
+        isDay: f.isDay,
+        max: f.days.isEmpty ? f.temp : f.days.first.max,
+        min: f.days.isEmpty ? f.temp : f.days.first.min,
+        sky: f.kind,
+        desc: f.description,
+      );
 
-  /// نوع الأيقونة القديم: sun / moon / cloud / rain / storm / fog
-  String get kind {
-    if (code == 0 || code == 1) return isDay ? 'sun' : 'moon';
-    if (code == 2 || code == 3) return 'cloud';
-    if (code == 45 || code == 48) return 'fog';
-    if (code >= 95) return 'storm';
-    return 'rain';
-  }
+  /// وصف عربي (نفس وصف شاشة الطقس).
+  String get description => _desc ?? wxDescription(code, isDay, 0);
 
-  /// نوع المشهد الحي (للأيقونة الحية وشاشة الطقس).
-  String get sky => wxKind(code, null);
+  /// نوع المشهد الحي: clear partly cloudy fog drizzle rain storm snow dust
+  String get sky => _sky ?? wxKind(code, null);
+
+  /// نوع الأيقونة المختصر: sun / moon / cloud / rain / storm / fog / dust
+  String get kind => switch (sky) {
+        'clear' => isDay ? 'sun' : 'moon',
+        'partly' || 'cloudy' => 'cloud',
+        'fog' => 'fog',
+        'dust' => 'dust',
+        'storm' => 'storm',
+        _ => 'rain',
+      };
 }
 
 /// يجلب الطقس المختصر من Open-Meteo (مجاني وبدون مفتاح).
@@ -52,12 +69,14 @@ class WeatherService {
         final r = await WeatherHub.search(city.trim());
         loc = r.isEmpty ? null : r.first;
       } else {
-        loc = await WeatherHub.locate();
+        // نفس أول مدينة بشاشة الطقس (موقعك أو أول مدينة محفوظة)
+        final list = WeatherHub.cities;
+        loc = list.isNotEmpty ? list.first : await WeatherHub.locate();
       }
       if (loc == null) return null;
       final f = await WeatherHub.load(loc);
       if (f == null) return null;
-      return Weather(place: loc.name, temp: f.temp, code: f.code, isDay: f.isDay, max: f.days.isEmpty ? f.temp : f.days.first.max, min: f.days.isEmpty ? f.temp : f.days.first.min);
+      return Weather.fromForecast(f);
     } catch (_) {
       return null;
     }
@@ -142,7 +161,14 @@ class Forecast {
   });
 
   /// نوع المشهد: clear partly cloudy fog drizzle rain storm snow dust
-  String get kind => wxKind(code, dust ?? (pm10 != null && pm10! > 260 ? 300 : null));
+  String get kind => wxKind(code, _dusty ? 300 : null);
+
+  /// العجاج الحقيقي: نماذج الغبار تبالغ كثير بالعراق حتى والسماء صافية، فما نعتبرها
+  /// عجاج إلا إذا الرؤية نفسها قلّت فعلاً (مثل ما تشوفه من الشباك).
+  bool get _dusty {
+    final d = dust ?? 0, p = pm10 ?? 0;
+    return (visKm < 5 && (d >= 100 || p >= 250)) || (visKm < 8 && (d >= 400 || p >= 500));
+  }
   String get description => kind == 'dust' ? 'غبار وعجاج' : wxDescription(code, isDay, rainNow);
 
   /// اتجاه حركة الغيوم على الشاشة: +١ يمين (شرقاً)، −١ يسار (غرباً).
@@ -269,9 +295,25 @@ class WeatherHub {
     return out;
   }
 
+  /// التحديث كل [weather.refresh] دقيقة (الأصل ١٥، والحد الأقصى ساعة).
   static void start() {
-    _timer ??= Timer.periodic(const Duration(minutes: 20), (_) => refreshAll());
+    restartTimer();
     refreshAll();
+  }
+
+  static void restartTimer() {
+    _timer?.cancel();
+    final m = AppState.I.cfg.i('weather.refresh').clamp(5, 60);
+    _timer = Timer.periodic(Duration(minutes: m), (_) => refreshAll());
+  }
+
+  /// آخر تحديث فعلي (لأي مدينة).
+  static DateTime? get lastUpdate {
+    DateTime? t;
+    for (final f in data.values) {
+      if (t == null || f.fetched.isAfter(t)) t = f.fetched;
+    }
+    return t;
   }
 
   static Future<void> refreshAll() async {
@@ -332,7 +374,7 @@ class WeatherHub {
 
   static Future<Forecast?> load(WxCity c, {bool force = false}) async {
     final old = data[c.key];
-    if (!force && old != null && DateTime.now().difference(old.fetched).inMinutes < 15) return old;
+    if (!force && old != null && DateTime.now().difference(old.fetched).inMinutes < 10) return old;
     if (_loading.contains(c.key)) return old;
     _loading.add(c.key);
     try {
@@ -414,7 +456,8 @@ class WeatherHub {
         _i(hl('weather_code').elementAtOrNull(i)),
         _i(hl('precipitation_probability').elementAtOrNull(i)),
         _i(hl('is_day').elementAtOrNull(i)) == 1,
-        _d(hl('visibility').elementAtOrNull(i)) / 1000,
+        // الرؤية إذا ما وصلت نعتبرها مفتوحة (٢٤ كم) حتى ما تطلع عجاج أو ضباب بالغلط
+        (hl('visibility').elementAtOrNull(i) is num) ? _d(hl('visibility').elementAtOrNull(i)) / 1000 : 24.0,
         pmHourly['${times[i]}'],
       ));
     }

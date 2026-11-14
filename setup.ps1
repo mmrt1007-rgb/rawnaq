@@ -83,15 +83,31 @@ if (-not (Test-Path $relJks)) {
         } else { Write-Host "Could not create the release key; building with the development key." -ForegroundColor Yellow }
     } else { Write-Host "keytool not found (comes with Android Studio); building with the development key." -ForegroundColor Yellow }
 }
-foreach ($g in @("$out\android\app\build.gradle.kts", "$out\android\app\build.gradle")) {
-    if (Test-Path $g) {
-        $txt = Get-Content $g -Raw
-        if ($txt -notmatch 'RAWNAQ_SIGNING') {
-            $blk = if ($g.EndsWith('.kts')) { "signing.gradle.kts.txt" } else { "signing.gradle.txt" }
-            [IO.File]::AppendAllText($g, [IO.File]::ReadAllText((Join-Path $src "tools\$blk")), $utf8)
-        }
-        break
+# Release signing (Flutter's documented way): imports at the top, key.properties read before android { },
+# and signingConfigs inside android { }. Works on old AGP and on AGP 9's new DSL.
+# A build file patched by an older Rawnaq version is thrown away and regenerated clean by flutter create.
+$gk = "$out\android\app\build.gradle.kts"
+$gg = "$out\android\app\build.gradle"
+if ((Test-Path $gk) -and ([IO.File]::ReadAllText($gk) -match 'RAWNAQ_SIGNING(:|2)')) {
+    Remove-Item $gk -Force
+    flutter create --org com --project-name rawnaq --platforms android $out | Out-Null
+}
+if (Test-Path $gk) {
+    $txt = [IO.File]::ReadAllText($gk)
+    if ($txt -notmatch 'RAWNAQ_SIGNING3') {
+        $parts = [IO.File]::ReadAllText((Join-Path $src "tools\signing.gradle.kts.txt")) -split '#--INSIDE-ANDROID--\r?\n'
+        $rx = [regex]'(?m)^android\s*\{[^\r\n]*\r?\n'
+        if ($rx.IsMatch($txt) -and $parts.Count -eq 2) {
+            $top = $parts[0]; $inside = $parts[1]
+            $txt = $rx.Replace($txt, { param($m) $top + $m.Value + $inside }, 1)
+            $txt = [regex]::Replace($txt, 'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)', 'signingConfig = signingConfigs.findByName("rawnaqRelease") ?: signingConfigs.getByName("debug")')
+            $txt = "import java.io.FileInputStream`nimport java.util.Properties`n" + $txt
+            [IO.File]::WriteAllText($gk, $txt, $utf8)
+        } else { Write-Host "android { } not found in build.gradle.kts; building with the development key." -ForegroundColor Yellow }
     }
+} elseif (Test-Path $gg) {
+    $txt = [IO.File]::ReadAllText($gg)
+    if ($txt -notmatch 'RAWNAQ_SIGNING') { [IO.File]::AppendAllText($gg, [IO.File]::ReadAllText((Join-Path $src "tools\signing.gradle.txt")), $utf8) }
 }
 if (Test-Path $relProps) { Copy-Item $relProps "$out\android\key.properties" -Force }
 else { Remove-Item "$out\android\key.properties" -Force -ErrorAction SilentlyContinue }
@@ -178,7 +194,9 @@ flutter pub get
 
 Write-Host "Building release APK..." -ForegroundColor Cyan
 # ARM only (every Android TV): smaller APK, faster install and start-up
-flutter build apk --release --target-platform android-arm,android-arm64
+# Full build output is also saved next to install.ps1 (build-output.txt) so errors can be read later
+$buildLog = Join-Path $src "build-output.txt"
+flutter build apk --release --target-platform android-arm,android-arm64 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $buildLog
 
 $apk = Join-Path $out "build\app\outputs\flutter-apk\app-release.apk"
 Write-Host ""
@@ -187,5 +205,9 @@ if (Test-Path $apk) {
     Write-Host $apk
 } else {
     Write-Host "Build did not produce an APK." -ForegroundColor Red
+    # The lines that explain why (Dart errors, Gradle script errors, "What went wrong")
+    $why = @(Get-Content $buildLog -ErrorAction SilentlyContinue | Where-Object { $_ -match 'error|Error:|What went wrong|Line \d+:|e: |Unresolved|FAILURE|Exception' } | Select-Object -First 40)
+    if ($why.Count) { Write-Host "---- why it failed ----" -ForegroundColor Yellow; $why | ForEach-Object { Write-Host $_ } }
+    Write-Host "Full output: $buildLog" -ForegroundColor Yellow
     exit 1
 }

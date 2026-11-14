@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -53,7 +54,7 @@ class Lu {
   static const rocket = Lu('rocket'), badgeCheck = Lu('badge-check'), users = Lu('users'), baby = Lu('baby'), userRound = Lu('user-round');
   static const key = Lu('key-round'), star = Lu('star'), plug = Lu('plug'), plugZap = Lu('plug-zap'), cable = Lu('cable'), hdmi = Lu('hdmi-port');
   static const router = Lu('router'), speaker = Lu('speaker'), smartHome = Lu('house-plug'), lightbulb = Lu('lightbulb'), moonStar = Lu('moon-star');
-  static const scaling = Lu('scaling'), zoomIn = Lu('zoom-in'), sparkles = Lu('sparkles'), penLine = Lu('pen-line'), penTool = Lu('pen-tool'), loaderCircle = Lu('loader-circle'), listChecks = Lu('list-checks'), circleX = Lu('circle-x');
+  static const scaling = Lu('scaling'), zoomIn = Lu('zoom-in'), sparkles = Lu('sparkles'), penLine = Lu('pen-line'), shuffle = Lu('shuffle'), sunDim = Lu('sun-dim'), penTool = Lu('pen-tool'), loaderCircle = Lu('loader-circle'), listChecks = Lu('list-checks'), circleX = Lu('circle-x');
   static const quote = Lu('quote'), calendarHeart = Lu('calendar-heart');
   static const palm = Lu('tree-palm'), leaf = Lu('leaf'), car = Lu('car'), plane = Lu('plane');
   static const umbrella = Lu('umbrella'), locate = Lu('locate-fixed'), navigation = Lu('navigation'), haze = Lu('haze'), cloudDrizzle = Lu('cloud-drizzle');
@@ -92,11 +93,10 @@ class AppIcon extends StatelessWidget {
     final i = icon;
     final name = i is Lu ? i.name : i.toString();
     Widget paint(Color col) => CustomPaint(size: Size.square(s), painter: _LucidePainter(name, col, strokeWidth));
-    if (shadows == null || shadows!.isEmpty) return RepaintBoundary(child: paint(c));
+    // الأيقونة بحجمها بالضبط دائماً: حتى لو الأب فرض مساحة أكبر أو غير مربعة ما تكبر وتغطي النص اللي يمها
+    if (shadows == null || shadows!.isEmpty) return fixedBox(s, s, RepaintBoundary(child: paint(c)));
     final sh = shadows!.first;
-    return SizedBox.square(
-      dimension: s,
-      child: Stack(clipBehavior: Clip.none, children: [
+    return fixedBox(s, s, Stack(clipBehavior: Clip.none, children: [
         Positioned.fill(
           child: Transform.translate(
             offset: sh.offset,
@@ -107,10 +107,13 @@ class AppIcon extends StatelessWidget {
           ),
         ),
         paint(c),
-      ]),
-    );
+      ]));
   }
 }
+
+/// صندوق بحجم ثابت ما يتمدد ويه قيود الأب: إذا الأب فرض مساحة أكبر، المحتوى يبقى بحجمه ويتوسط.
+Widget fixedBox(double w, double h, Widget child) =>
+    Center(widthFactor: 1, heightFactor: 1, child: SizedBox(width: w, height: h, child: child));
 
 class _LucidePainter extends CustomPainter {
   final String name;
@@ -120,8 +123,10 @@ class _LucidePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final k = size.width / 24;
+    final side = math.min(size.width, size.height);
+    final k = side / 24;
     canvas.save();
+    canvas.translate((size.width - side) / 2, (size.height - side) / 2);
     canvas.scale(k, k);
     canvas.drawPath(
       _pathFor(name),

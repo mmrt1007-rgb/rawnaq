@@ -150,8 +150,10 @@ class Slideshow extends StatefulWidget {
   final List<String> paths;
   final int interval;
   final bool kenBurns;
+  final bool shuffle;
   final ValueChanged<String>? onImage;
-  const Slideshow({super.key, required this.paths, required this.interval, this.kenBurns = true, this.onImage});
+  final ValueChanged<int>? onIndex;
+  const Slideshow({super.key, required this.paths, required this.interval, this.kenBurns = true, this.shuffle = false, this.onImage, this.onIndex});
 
   @override
   State<Slideshow> createState() => _SlideshowState();
@@ -169,19 +171,33 @@ class _SlideshowState extends State<Slideshow> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _precache();
       widget.onImage?.call(widget.paths[_i % widget.paths.length]);
+      widget.onIndex?.call(_i % widget.paths.length);
     });
   }
 
+  /// الصورة الجاية: بالترتيب، أو عشوائية بدون ما تتكرر نفس الصورة مرتين ورا بعض.
+  int get _nextIndex {
+    final n = widget.paths.length;
+    if (!widget.shuffle || n < 3) return (_i + 1) % n;
+    var j = _rand.nextInt(n - 1);
+    if (j >= _i % n) j++;
+    return j;
+  }
+
+  final _rand = math.Random();
+  int? _queued;
+
   void _precache() {
     if (!mounted || widget.paths.length < 2) return;
-    final next = widget.paths[(_i + 1) % widget.paths.length];
-    precacheImage(WallpaperImage.provider(context, next), context);
+    _queued = _nextIndex;
+    precacheImage(WallpaperImage.provider(context, widget.paths[_queued!]), context);
   }
 
   void _next() {
     if (!mounted || widget.paths.isEmpty) return;
-    setState(() => _i = (_i + 1) % widget.paths.length);
+    setState(() => _i = (_queued ?? _nextIndex) % widget.paths.length);
     widget.onImage?.call(widget.paths[_i]);
+    widget.onIndex?.call(_i);
     _precache();
   }
 
@@ -324,12 +340,120 @@ class ArtPainter extends CustomPainter {
       old.kind != kind || old.p.bg != p.bg || old.p.accent != p.accent || old.p.ring != p.ring || old.p.line != p.line || old.p.ink != p.ink;
 }
 
+// ═══════════════════ صور الواجهة المتغيرة ═══════════════════
+//  فيكما صفحة ١٦: ١٥ (الإعدادات والمعاينة) · ١٦ (اختيار الصور) · ١٧ (بكل الثيمات).
+//  الصور نفسها تبقى لما يتغير الثيم؛ الثيم يتحكم بالطبقة اللي فوقها بس.
+
+class HomeSlides {
+  static final index = ValueNotifier<int>(0);
+  static String _name(String path) => path.split('/').last;
+
+  static bool _auto(String path) => _name(path).startsWith('auto-');
+  static String _cat(String path) => _name(path).split('-').elementAtOrNull(1) ?? '';
+
+  /// الصور حسب المصدر: كل الصور، مكتبة رونق (تتجدد وحدها حتى ١٠٠ صورة)، صوري، أو اللي أختارها.
+  /// صور المكتبة الجديدة تنضاف وحدها لما تتجدد، بدون ما تسوي شي.
+  static List<String> paths() {
+    final s = AppState.I;
+    final c = s.cfg;
+    final walls = s.wallpapers;
+    switch (c.s('home.slides.source')) {
+      case 'library':
+        final cats = c.s('home.slides.cats').split(',').where((e) => e.isNotEmpty).toSet();
+        return [for (final p in walls) if (_auto(p) && (cats.isEmpty || cats.contains(_cat(p)))) p];
+      case 'mine':
+        return [for (final p in walls) if (!_auto(p)) p];
+      case 'pick':
+        final set = c.s('home.slides.set');
+        if (set == 'none') return const [];
+        if (set.isEmpty) return walls;
+        final names = set.split('|').toSet();
+        return [for (final p in walls) if (names.contains(_name(p))) p];
+      default:
+        return walls;
+    }
+  }
+
+  static bool get active => AppState.I.cfg.b('home.slides') && paths().isNotEmpty;
+
+  static bool isOn(String path) => paths().contains(path);
+
+  /// التحديد اليدوي يحوّل المصدر لـ «أختارها».
+  static void toggle(String path) {
+    final all = AppState.I.wallpapers;
+    final on = paths().toSet();
+    if (!on.remove(path)) on.add(path);
+    _save([for (final p in all) if (on.contains(p)) p], all.length);
+  }
+
+  static void setAll(bool on) {
+    AppState.I.set('home.slides.set', on ? '' : 'none');
+    AppState.I.set('home.slides.source', on ? 'all' : 'pick');
+  }
+
+  static void _save(List<String> picked, int total) {
+    final v = picked.isEmpty ? 'none' : (picked.length == total ? '' : picked.map(_name).join('|'));
+    AppState.I.set('home.slides.set', v);
+    AppState.I.set('home.slides.source', 'pick');
+  }
+
+  /// عدد صور المكتبة لكل فئة (للشاشة).
+  static int countIn(String cat) => AppState.I.wallpapers.where((p) => _auto(p) && _cat(p) == cat).length;
+}
+
+/// الصور المتغيرة مع طبقة الثيم: لون خلفية الثيم بتدرج، أخف بالنص وأقوى تحت عند التطبيقات.
+class HomeSlidesBackdrop extends StatelessWidget {
+  final List<String>? paths;
+  const HomeSlidesBackdrop({super.key, this.paths});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppState.I;
+    final c = s.cfg;
+    final list = paths ?? HomeSlides.paths();
+    if (list.isEmpty) return ColoredBox(color: s.palette.bg);
+    final dim = c.d('home.slides.dim').clamp(0.0, 0.9);
+    final tint = c.b('home.slides.tint') ? s.palette.bg : Colors.black;
+    final interval = c.i('home.slides.interval');
+    return RepaintBoundary(
+      child: Stack(fit: StackFit.expand, children: [
+        Slideshow(
+          key: ValueKey('${list.length}:${list.first}:$interval:${c.b('home.slides.shuffle')}'),
+          paths: list,
+          interval: interval,
+          kenBurns: c.s('home.slides.motion') == 'kenburns',
+          shuffle: c.b('home.slides.shuffle'),
+          onIndex: (i) => HomeSlides.index.value = i,
+        ),
+        IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  tint.withValues(alpha: math.min(0.9, dim * 1.45)),
+                  tint.withValues(alpha: dim * 0.9),
+                  tint.withValues(alpha: math.min(0.92, dim * 2.4)),
+                ],
+                stops: const [0, 0.5, 1],
+              ),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
 /// خلفية الواجهة (وخلف شاشات الإعدادات بنمط الزجاج).
 /// بنمط الزجاج إذا الخلفية لون سادة نستخدم الهالات، لأن الزجاج يحتاج شي وراه حتى يبان.
 Widget homeBackdrop() {
   final s = AppState.I;
   final c = s.cfg;
   final p = s.palette;
+  // الصور المتغيرة فوق أي ثيم (إذا مفعّلة وبيها صور)
+  if (HomeSlides.active) return const HomeSlidesBackdrop();
   var kind = c.s('home.bg');
   var art = c.s('home.art');
   if (p.glass && kind == 'solid') {

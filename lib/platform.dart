@@ -82,6 +82,15 @@ class NativeBridge {
 
   static Future<void> systemSettings() => _ch.invokeMethod('systemSettings');
 
+  /// ثيم شاشة رونق الأولى المحفوظ ومدة تشغيل الجهاز (لمعرفة أول تشغيل).
+  static Future<({bool day, int uptimeMs})> splashInfo() async {
+    final m = await _ch.invokeMethod<Map<dynamic, dynamic>>('splashInfo') ?? const {};
+    return (day: m['day'] == true, uptimeMs: (m['uptime'] as num?)?.toInt() ?? 0);
+  }
+
+  /// يثبت ثيم أول لقطة للتشغيل الجاي (أندرويد ١٣+).
+  static Future<bool> setSplashTheme(bool day) async => await _ch.invokeMethod<bool>('setSplashTheme', {'day': day}) ?? false;
+
   static Future<void> wifiSettings() => _ch.invokeMethod('wifiSettings');
 
   static Future<void> bluetoothSettings() => _ch.invokeMethod('bluetoothSettings');

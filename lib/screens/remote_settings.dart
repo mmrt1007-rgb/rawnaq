@@ -41,7 +41,7 @@ class RemoteSettingsScreen extends StatelessWidget {
                       radius: BorderRadius.circular(32),
                       padding: const EdgeInsets.all(28),
                       child: NavZone(
-                        child: SingleChildScrollView(
+                        child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                           clipBehavior: Clip.none,
                           padding: const EdgeInsets.all(5),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -61,7 +61,7 @@ class RemoteSettingsScreen extends StatelessWidget {
                             cChoice<String>('حركة التركيز', 'remote.motion', const [('none', 'بدون'), ('soft', 'ناعمة'), ('full', 'تكبير ولمعة')]),
                             cChoice<String>('إطار التركيز', 'remote.ring', const [('thin', 'خط رفيع'), ('gold', 'ذهبي'), ('glow', 'توهج')]),
                           ]),
-                        ),
+                        )),
                       ),
                     ),
                   ),

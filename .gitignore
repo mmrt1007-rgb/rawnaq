@@ -12,3 +12,5 @@ install-royal.bat
 install-all.bat
 update-url.txt
 *.apk
+build-output.txt
+tv-check/

@@ -58,7 +58,7 @@ class _LayoutGalleryScreenState extends State<LayoutGalleryScreen> {
                       radius: BorderRadius.circular(32),
                       padding: const EdgeInsets.all(22),
                       child: NavZone(
-                        child: SingleChildScrollView(
+                        child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                           clipBehavior: Clip.none,
                           padding: const EdgeInsets.all(5),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -73,7 +73,7 @@ class _LayoutGalleryScreenState extends State<LayoutGalleryScreen> {
                                 builder: (context, f) => _LayoutRow(layout: l, focused: f, selected: l.$1 == current),
                               ),
                           ]),
-                        ),
+                        )),
                       ),
                     ),
                   ),

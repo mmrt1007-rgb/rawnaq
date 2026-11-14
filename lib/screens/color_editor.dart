@@ -84,7 +84,7 @@ class _ColorEditorState extends State<_ColorEditor> {
             Expanded(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 820),
-                child: SingleChildScrollView(
+                child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                   clipBehavior: Clip.none,
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     Text(widget.title, style: Fonts.title(32, p.ink)),
@@ -141,7 +141,7 @@ class _ColorEditorState extends State<_ColorEditor> {
                       PillButton('إلغاء', onTap: () => Navigator.pop(context)),
                     ]),
                   ]),
-                ),
+                )),
               ),
             ),
           ]),

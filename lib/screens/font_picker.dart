@@ -40,7 +40,7 @@ Future<String?> showFontPicker(BuildContext context, {required String title, req
                     )
                   else
                     Expanded(
-                      child: ListView.builder(
+                      child: AxisClip(axis: Axis.vertical, child: ListView.builder(
                         clipBehavior: Clip.none,
                         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         itemCount: fonts.length,
@@ -79,7 +79,7 @@ Future<String?> showFontPicker(BuildContext context, {required String title, req
                             ),
                           );
                         },
-                      ),
+                      )),
                     ),
                 ]),
               ),

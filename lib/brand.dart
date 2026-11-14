@@ -15,6 +15,9 @@ import 'state.dart';
 //  نفس المسارات المستعملة بأيقونة التطبيق والبانر وشاشة الإقلاع.
 // ═══════════════════════════════════════════════════════════════════════
 
+/// صندوق بحجم ثابت ما يتمدد ويه قيود الأب (الشعار ما يكبر ويغطي اللي يمه).
+Widget _fixed(double w, double h, Widget child) => Center(widthFactor: 1, heightFactor: 1, child: SizedBox(width: w, height: h, child: child));
+
 class BrandColors {
   static const night = Color(0xFF04140F);
   static const emeraldDeep = Color(0xFF05261D);
@@ -101,7 +104,7 @@ class RawnaqMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mark = SizedBox.square(dimension: size, child: CustomPaint(painter: _MarkPainter(style)));
+    final mark = _fixed(size, size, CustomPaint(painter: _MarkPainter(style)));
     if (!glow) return mark;
     return Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
       Container(
@@ -195,7 +198,7 @@ class RawnaqLogotype extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = kNastaliqW * height / kNastaliqH;
-    return SizedBox(width: w, height: height, child: CustomPaint(painter: _LogoPainter(night, color)));
+    return _fixed(w, height, CustomPaint(painter: _LogoPainter(night, color)));
   }
 }
 
@@ -227,11 +230,7 @@ class RawnaqLatin extends StatelessWidget {
   const RawnaqLatin({super.key, required this.width, this.color = BrandColors.goldFlat});
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: width,
-        height: kWordLaH * width / kWordLaW,
-        child: CustomPaint(painter: _LatinPainter(color)),
-      );
+  Widget build(BuildContext context) => _fixed(width, kWordLaH * width / kWordLaW, CustomPaint(painter: _LatinPainter(color)));
 }
 
 class _LatinPainter extends CustomPainter {
@@ -537,12 +536,7 @@ class _RawnaqLoaderState extends State<RawnaqLoader> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final night = widget.night ?? AppState.I.palette.night;
-    return RepaintBoundary(
-      child: SizedBox.square(
-        dimension: widget.size,
-        child: CustomPaint(painter: _LoaderPainter(_st, night, widget.size < 110, _frame)),
-      ),
-    );
+    return _fixed(widget.size, widget.size, RepaintBoundary(child: CustomPaint(painter: _LoaderPainter(_st, night, widget.size < 110, _frame))));
   }
 }
 

@@ -16,7 +16,7 @@ import '../streamer_services.dart';
 import '../system_services.dart';
 import '../weather_sky.dart' show WeatherSky;
 import '../widgets.dart';
-import 'streamer_screens.dart' show ProfilePicker, KidsScreen, live;
+import 'streamer_screens.dart' show ProfilePicker, KidsScreen, live, SysSection, StatusLine;
 import 'system_screens.dart';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -37,9 +37,10 @@ class Medallion extends StatelessWidget {
   const Medallion({super.key, required this.icon, this.size = 200, required this.color, this.onColor});
 
   @override
-  Widget build(BuildContext context) => SizedBox.square(
-        dimension: size,
-        child: CustomPaint(
+  Widget build(BuildContext context) => fixedBox(
+        size,
+        size,
+        CustomPaint(
           painter: _RingPainter2(color),
           child: Center(
             child: Container(
@@ -558,7 +559,7 @@ class _KidsAppsGridState extends State<KidsAppsGrid> {
         ]),
         const SizedBox(height: 20),
         Expanded(
-          child: GridView.builder(
+          child: AxisClip(axis: Axis.vertical, child: GridView.builder(
             clipBehavior: Clip.none,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, mainAxisSpacing: 26, crossAxisSpacing: 26, childAspectRatio: 250 / (m.artHeight + 60)),
             itemCount: all.length,
@@ -591,7 +592,7 @@ class _KidsAppsGridState extends State<KidsAppsGrid> {
                 ]),
               );
             },
-          ),
+          )),
         ),
       ]);
     });
@@ -1130,38 +1131,77 @@ class _PlugWizardState extends State<PlugWizard> {
 
 class AboutRawnaqScreen extends StatelessWidget {
   const AboutRawnaqScreen({super.key});
+
+  static const developer = 'م. مرتضى محمد حسن';
+
   @override
   Widget build(BuildContext context) {
+    // فيكما صفحة ١٦ رقم ١٤ «عن رونق والمطوّر»
     return live(() {
       final s = AppState.I;
       final p = s.palette;
       final v = s.version.isNotEmpty ? s.version : '3.8.0';
+      final muted = p.muted;
+      final gold = p.night ? const Color(0xFFD9B266) : const Color(0xFF9C7A34);
+      Widget line(bool flip) => Container(
+            width: 190,
+            height: 1.5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: flip ? Alignment.centerRight : Alignment.centerLeft,
+                end: flip ? Alignment.centerLeft : Alignment.centerRight,
+                colors: [gold.withValues(alpha: 0), gold.withValues(alpha: 0.85)],
+              ),
+            ),
+          );
       return SysScaffold(
         title: 'عن رونق',
         sub: 'واجهة عربية لشاشات البيت، بهوية أهل البيت (ع)',
         icon: Lu.info,
         left: SysCard(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            RawnaqLockup(markSize: 200, night: p.night, stacked: true, glow: true),
-            const SizedBox(height: 18),
+            RawnaqLockup(markSize: 170, night: p.night, stacked: true, glow: true),
+            const SizedBox(height: 16),
             StatusChip('الإصدار ${Ar.n(v)}', icon: Lu.badgeCheck),
-            const SizedBox(height: 18),
-            FitText('صُنع بحب لعوائلنا، بالعربي من أول حرف لآخر حرف', alignment: Alignment.center, style: Fonts.body(20, p.muted)),
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
+            // زخرفة: خطين ذهبيين وماسة بالنص
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              line(false),
+              const SizedBox(width: 14),
+              Transform.rotate(angle: math.pi / 4, child: Container(width: 10, height: 10, color: gold)),
+              const SizedBox(width: 14),
+              line(true),
+            ]),
+            const SizedBox(height: 22),
+            FitText('تصميم وتطوير', alignment: Alignment.center, style: Fonts.body(22, muted)),
+            const SizedBox(height: 6),
+            // اسم المطوّر بالأميري، بتدرج ذهبي بالليل وزمردي بالنهار
+            ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (r) => LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: p.night ? const [Color(0xFFFBEFC8), Color(0xFFD9B266), Color(0xFFA87A33)] : const [Color(0xFF1E7A5E), Color(0xFF0E4A39), Color(0xFF062A20)],
+                stops: const [0, 0.55, 1],
+              ).createShader(r),
+              child: FitText(developer, alignment: Alignment.center, style: Fonts.family('Amiri', 66, Colors.white, weight: FontWeight.w700, height: 1.5)),
+            ),
+            const SizedBox(height: 10),
+            FitText('صُنع بحب لعوائلنا، بالعربي من أول حرف لآخر حرف', alignment: Alignment.center, style: Fonts.body(20, muted)),
+            const SizedBox(height: 22),
             Container(height: 1, color: p.line),
-            const SizedBox(height: 18),
-            FitText('اللّهمّ صلِّ على محمدٍ وآلِ محمد', alignment: Alignment.center, style: Fonts.title(30, p.ring)),
+            const SizedBox(height: 22),
+            FitText('اللّهمّ صلِّ على محمدٍ وآلِ محمد', alignment: Alignment.center, style: Fonts.title(30, gold)),
           ]),
         ),
         right: [
           SysRow(icon: Lu.tv, title: 'الجهاز', value: s.model.isEmpty ? 'أندرويد TV' : s.model, autofocus: true, onTap: () {}),
-          SysRow(icon: Lu.scrollText, title: 'سجل الإصدارات', sub: 'كل اللي وصل لرونق', onTap: () => Navigator.push(context, fade(const VersionHistoryScreen()))),
+          SysRow(icon: Lu.scrollText, title: 'سجل الإصدارات', value: 'الإصدار ${Ar.n(v)}', onTap: () => Navigator.push(context, fade(const VersionHistoryScreen()))),
           const SysSection('شكر وتقدير'),
-          SysRow(icon: Lu.cloudSun, title: 'Open-Meteo', sub: 'بيانات الطقس وجودة الهواء، مجاناً', onTap: () {}),
-          SysRow(icon: Lu.shapes, title: 'Lucide', sub: 'الأيقونات (رخصة ISC)', onTap: () {}),
-          SysRow(icon: Lu.type, title: 'Google Fonts', sub: 'ريم كوفي، ريدكس برو، أميري وغيرها', onTap: () {}),
-          SysRow(icon: Lu.calendarHeart, title: 'التقويم الهجري', sub: 'حزمة hijri المفتوحة المصدر', onTap: () {}),
-          SysRow(icon: Lu.thanks, title: 'وكل من جرّب واقترح', sub: 'أفكاركم صارت جزء من رونق', onTap: () {}),
+          SysRow(icon: Lu.cloudSun, title: 'Open-Meteo', value: 'الطقس وجودة الهواء', onTap: () {}),
+          SysRow(icon: Lu.shapes, title: 'Lucide', value: 'الأيقونات · ISC', onTap: () {}),
+          SysRow(icon: Lu.type, title: 'Google Fonts', value: 'ريم كوفي، ريدكس، أميري', onTap: () {}),
+          SysRow(icon: Lu.thanks, title: 'وكل من جرّب واقترح', value: 'أفكاركم صارت جزء من رونق', onTap: () {}),
         ],
       );
     });
@@ -1246,7 +1286,7 @@ class RamadanScreen extends StatelessWidget {
       String hm(DateTime? t) => t == null ? '—' : '${Ar.time(t)} ${t.hour < 12 ? 'ص' : 'م'}';
       return SysScaffold(
         title: 'وضع رمضان',
-        sub: 'الإمساك والإفطار بالواجهة، وتنبيه قبل الإفطار',
+        sub: 'الإمساك والإفطار بالواجهة',
         icon: Lu.moonStar,
         left: SysCard(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1595,6 +1635,13 @@ const kReleases = <(String, String, List<String>)>[
     'شعار رونق الجديد بشاشة الإقلاع والأيقونة والبانر',
     'الشعار ينكتب بخط اليد وقت التحميل: ر و ن ق ثم النقاط، والحلقة تمشي مع القلم',
     'قسم «حركة الشعار» بالإعدادات: السرعة، رأس القلم، الحلقة، وانتظار الكتابة بالإقلاع',
+    'إقلاع بلا قفزة: أول لحظة لرونق هي أول لقطة من الكتابة، والانتظار بأول تشغيل للجهاز فقط',
+    'إصلاح التداخل من جذوره: القوائم ما تنرسم فوق باقي الواجهة، والأيقونات بحجمها، وآية اليوم ما تغطي المواقيت',
+    'الريموت يطلع من حقول الكتابة (إضافة مدينة والبحث)',
+    'شاشة «عن رونق» جديدة بتوقيع المطوّر م. مرتضى محمد حسن',
+    'صور الواجهة المتغيرة بكل الثيمات، مربوطة بمكتبة رونق (حتى ١٠٠ صورة بـ ١٠ فئات تتجدد وحدها)',
+    'الطقس صار حقيقي ومطابق: نفس الحالة بالواجهة وشاشة الطقس، والعجاج بس لما تقل الرؤية فعلاً، وتحديث كل ربع ساعة',
+    'الليل والنهار مع الشروق والغروب الحقيقي بمدينتك',
     'مواقيت الصلاة لكل محافظات العراق توقيت فقط بدون أي تنبيه، ومفتاح توقيع خاص وتحقق من التحديثات',
     'الآيات بخط نظيف بدون أقواس',
     'شاشة الطقس الحية بمشاهد سينمائية وقطرات على الزجاج',

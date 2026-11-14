@@ -49,7 +49,7 @@ class _LiquidGlassScreenState extends State<LiquidGlassScreen> {
                       padding: const EdgeInsets.all(28),
                       child: NavZone(
                         node: _panel,
-                        child: SingleChildScrollView(
+                        child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                           clipBehavior: Clip.none,
                           padding: const EdgeInsets.all(5),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -88,7 +88,7 @@ class _LiquidGlassScreenState extends State<LiquidGlassScreen> {
                                     style: Fonts.body(18, p.muted)),
                               ),
                           ]),
-                        ),
+                        )),
                       ),
                     ),
                   ),

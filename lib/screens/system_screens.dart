@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -64,11 +65,11 @@ class SysScaffold extends StatelessWidget {
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Expanded(
                       flex: 904,
-                      child: SingleChildScrollView(
+                      child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                         clipBehavior: Clip.none,
                         padding: const EdgeInsets.all(6),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: right),
-                      ),
+                      )),
                     ),
                     if (left != null) ...[const SizedBox(width: 64), Expanded(flex: 760, child: left!)],
                   ]),
@@ -230,70 +231,98 @@ String _hm(int mins) {
 class BootSplash extends StatelessWidget {
   const BootSplash({super.key});
 
+  // نفس لون شاشة أندرويد الأولى (res/values/ic_launcher_colors.xml)
+  static const _solidNight = Color(0xFF072019), _solidDay = Color(0xFFF3ECDD);
+  // الشعار بنفس مقاس أيقونة البداية بالضبط (١٩٠dp بوسط الشاشة)، مو بمقاس لوحة التصميم
+  static const loaderDp = 190.0;
+
   @override
   Widget build(BuildContext context) {
     final s = AppState.I;
-    final night = s.palette.night;
+    // فيكما صفحة ١٥ «انتقال الإقلاع»: أول لقطة = شاشة أندرويد الأولى بالضبط، بعدها كل شي يظهر بهدوء
+    final night = !s.bootDay;
     final ink = night ? const Color(0xFFC9C2AE) : const Color(0xFF6B6252);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          radius: 0.9,
-          colors: night ? const [Color(0xFF0E4535), Color(0xFF03100C)] : const [Color(0xFFFBF7EE), Color(0xFFEADFC8)],
-        ),
-      ),
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: FittedBox(
-          child: SizedBox(
-            width: 1920,
-            height: 1080,
-            child: ValueListenableBuilder<int>(
-              valueListenable: s.bootStep,
-              builder: (context, step, _) {
-                final label = switch (step) {
-                  0 => 'جاري التشغيل · الإعدادات',
-                  1 => 'جاري التشغيل · التطبيقات',
-                  2 => 'جاري التشغيل · الخلفيات',
-                  _ => 'أهلاً بك',
-                };
-                return Stack(children: [
-                  // الشعار نفسه هو التحميل: القلم يكتب «رونق» حرفاً حرفاً والحلقة تمشي معه ومع خطوات التشغيل
-                  Positioned(
-                    top: 230,
-                    left: 0,
-                    right: 0,
-                    child: Column(children: [
-                      Stack(alignment: Alignment.center, children: [
-                        Container(
-                          width: 300,
-                          height: 300,
-                          decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
-                            BoxShadow(color: BrandColors.gold.withValues(alpha: night ? 0.2 : 0.12), blurRadius: 220, spreadRadius: 10),
-                          ]),
-                        ),
-                        RawnaqLoader(size: 380, night: night, progress: ((step + 1) / 5).clamp(0.0, 1.0), onFinished: BootWriting.finish),
-                      ]),
-                      const SizedBox(height: 40),
-                      RawnaqLatin(width: 348, color: night ? BrandColors.goldFlat : const Color(0xFFB08A3A)),
-                      const SizedBox(height: 46),
-                      Text(label, style: Fonts.body(22, ink)),
-                    ]),
-                  ),
-                  Positioned(
-                    bottom: 46,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Text('اللّهمّ صلِّ على محمدٍ وآلِ محمد', style: Fonts.body(24, night ? BrandColors.gold : const Color(0xFF9C7A34), weight: FontWeight.w600)),
-                    ),
-                  ),
-                ]);
-              },
+    final screen = MediaQuery.sizeOf(context);
+    final k = math.max(0.1, math.min(screen.width / 1920, screen.height / 1080));
+    final half = loaderDp / 2 / k; // نص الشعار بوحدات لوحة ١٩٢٠
+    Widget fadeIn(int ms, Widget child, {int delay = 0}) => TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: Duration(milliseconds: ms + delay),
+          curve: Interval(delay / (ms + delay), 1, curve: Curves.easeOutCubic),
+          builder: (context, v, c) => Opacity(opacity: v, child: c),
+          child: child,
+        );
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Stack(fit: StackFit.expand, children: [
+        ColoredBox(color: night ? _solidNight : _solidDay),
+        // الخلفية تتدرج خلال ٠٫٧ ثانية من اللون الثابت
+        fadeIn(
+          700,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                radius: 0.9,
+                colors: night ? const [Color(0xFF0E4535), Color(0xFF03100C)] : const [Color(0xFFFBF7EE), Color(0xFFEADFC8)],
+              ),
             ),
           ),
         ),
-      ),
+        // الحالة والاسم اللاتيني والصلوات بلوحة التصميم، تحت الشعار
+        fadeIn(
+          600,
+          delay: 250,
+          FittedBox(
+            child: SizedBox(
+              width: 1920,
+              height: 1080,
+              child: ValueListenableBuilder<int>(
+                valueListenable: s.bootStep,
+                builder: (context, step, _) {
+                  final label = switch (step) {
+                    0 => 'جاري التشغيل · الإعدادات',
+                    1 => 'جاري التشغيل · التطبيقات',
+                    2 => 'جاري التشغيل · الخلفيات',
+                    _ => 'أهلاً بك',
+                  };
+                  return Stack(children: [
+                    Positioned(
+                      top: 540 + half + 38,
+                      left: 0,
+                      right: 0,
+                      child: Column(children: [
+                        RawnaqLatin(width: 300, color: night ? BrandColors.goldFlat : const Color(0xFFB08A3A)),
+                        const SizedBox(height: 34),
+                        Text(label, style: Fonts.body(22, ink)),
+                      ]),
+                    ),
+                    Positioned(
+                      bottom: 46,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Text('اللّهمّ صلِّ على محمدٍ وآلِ محمد', style: Fonts.body(24, night ? BrandColors.gold : const Color(0xFF9C7A34), weight: FontWeight.w600)),
+                      ),
+                    ),
+                  ]);
+                },
+              ),
+            ),
+          ),
+        ),
+        // الشعار نفسه هو التحميل: القلم يكتب «رونق» والحلقة تمشي معه ومع خطوات التشغيل
+        Center(
+          child: ValueListenableBuilder<int>(
+            valueListenable: s.bootStep,
+            builder: (context, step, _) => RawnaqLoader(
+              size: loaderDp,
+              night: night,
+              progress: ((step + 1) / 5).clamp(0.0, 1.0),
+              onFinished: BootWriting.finish,
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
@@ -1046,7 +1075,7 @@ class _SetupWizardState extends State<SetupWizard> {
           ),
         ]);
       case 1:
-        return SingleChildScrollView(
+        return AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
           clipBehavior: Clip.none,
           padding: const EdgeInsets.all(6),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -1062,7 +1091,7 @@ class _SetupWizardState extends State<SetupWizard> {
                 onTap: () => s.set('prayer.city', c.id),
               ),
           ]),
-        );
+        ));
       case 2:
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           FitText('تطبيقاتك بالواجهة', style: Fonts.title(34, p.ink)),

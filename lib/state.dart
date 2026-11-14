@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'config.dart';
 import 'palette.dart';
 import 'platform.dart';
+import 'prayer.dart';
 import 'wallpaper_fetcher.dart';
 import 'weather.dart';
 
@@ -98,6 +99,9 @@ class AppState extends ChangeNotifier {
   /// وضع خفيف للأجهزة الضعيفة: بدون تغبيش حي ولا حركات مستمرة.
   /// الوضع الآمن: يتفعّل إذا توقف التطبيق ٣ مرات خلال دقيقتين — بدون حركة وبأخف رسم.
   bool safe = false;
+  /// شاشة الإقلاع: ثيمها نفس أول لقطة أندرويد (اللي تثبتت بالتشغيل السابق)، وهل الجهاز توه مشتغل.
+  bool bootDay = false;
+  bool coldBoot = true;
 
   /// إصدار التطبيق المنصّب ووقت آخر تحديث (من النظام).
   String version = '';
@@ -180,7 +184,8 @@ class AppState extends ChangeNotifier {
       }
     });
     refreshWeather();
-    _weatherTimer = Timer.periodic(const Duration(minutes: 30), (_) => refreshWeather());
+    // الطقس المختصر يتحدث مع شاشة الطقس (WeatherHub.refreshAll يحدّثه بعد كل جلب)
+    _weatherTimer = Timer.periodic(Duration(minutes: cfg.i('weather.refresh').clamp(5, 60)), (_) => refreshWeather());
     _pkgSub = NativeBridge.packageEvents.listen((_) => reloadApps());
   }
 
@@ -205,6 +210,12 @@ class AppState extends ChangeNotifier {
   void set(String key, Object value) {
     cfg.set(key, value);
     if (key == 'misc.city') refreshWeather();
+    if (key.startsWith('prayer.')) _sun = null;
+    if (key == 'weather.refresh') {
+      _weatherTimer?.cancel();
+      _weatherTimer = Timer.periodic(Duration(minutes: cfg.i('weather.refresh').clamp(5, 60)), (_) => refreshWeather());
+      WeatherHub.restartTimer();
+    }
     notifyListeners();
   }
 
@@ -442,9 +453,35 @@ class AppState extends ChangeNotifier {
     final mode = cfg.s('theme.mode');
     if (mode == 'day') return false;
     if (mode == 'night') return true;
-    final h = now.hour, ds = cfg.i('theme.dayStart'), ns = cfg.i('theme.nightStart');
-    return ds < ns ? (h >= ns || h < ds) : (h >= ns && h < ds);
+    if (mode == 'hours') {
+      final h = now.hour, ds = cfg.i('theme.dayStart'), ns = cfg.i('theme.nightStart');
+      return ds < ns ? (h >= ns || h < ds) : (h >= ns && h < ds);
+    }
+    // تلقائي: نهار من الشروق للغروب الحقيقي بمدينتك (من حساب المواقيت، بدون إنترنت)
+    final (rise, set) = _sunToday();
+    final t = DateTime.now();
+    return t.isBefore(rise) || !t.isBefore(set);
   }
+
+  (int, DateTime, DateTime)? _sun;
+  (DateTime, DateTime) _sunToday() {
+    final t = DateTime.now();
+    final key = t.year * 10000 + t.month * 100 + t.day;
+    final c = _sun;
+    if (c != null && c.$1 == key) return (c.$2, c.$3);
+    var rise = DateTime(t.year, t.month, t.day, 6), set = DateTime(t.year, t.month, t.day, 17, 30);
+    try {
+      for (final p in Prayers.forDay(t)) {
+        if (p.id == 'sunrise') rise = p.time;
+        if (p.id == 'sunset') set = p.time;
+      }
+    } catch (_) {}
+    _sun = (key, rise, set);
+    return (rise, set);
+  }
+
+  /// يمسح حساب الشروق والغروب (بعد تغيير المدينة).
+  void resetSun() => _sun = null;
 
   Palette get palette => Palette.from(cfg, isNight);
 

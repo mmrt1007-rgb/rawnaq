@@ -75,7 +75,7 @@ class _Panel extends StatelessWidget {
             child: NavZone(
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Flexible(
-            child: SingleChildScrollView(
+            child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
               clipBehavior: Clip.none,
               padding: const EdgeInsets.all(5),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -136,7 +136,7 @@ class _Panel extends StatelessWidget {
                     ),
                   ),
               ]),
-            ),
+            )),
           ),
           const SizedBox(height: 14),
           // صف الإجراءات: ◀▶ تختار الزر، موافق ينفّذه

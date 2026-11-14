@@ -406,7 +406,7 @@ class _ChoicePickerState<T> extends State<_ChoicePicker<T>> {
           const SizedBox(height: 20),
           Flexible(
             child: NavZone(
-              child: SingleChildScrollView(
+              child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
               clipBehavior: Clip.none,
               padding: const EdgeInsets.all(4),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -437,7 +437,7 @@ class _ChoicePickerState<T> extends State<_ChoicePicker<T>> {
                     },
                   ),
               ]),
-            ),
+            )),
             ),
           ),
         ]),
@@ -617,7 +617,7 @@ class _SelectorRowState<T> extends State<SelectorRow<T>> {
         if (_hi < widget.values.length) widget.onSelect(widget.values[_hi]);
       },
       builder: (context, f) {
-        final items = SingleChildScrollView(
+        final items = AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
           controller: _scroll,
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
@@ -631,7 +631,7 @@ class _SelectorRowState<T> extends State<SelectorRow<T>> {
               ),
             ],
           ]),
-        );
+        ));
         if (!widget.framed) return items;
         return AnimatedContainer(
           duration: AppState.I.anim(160),
@@ -981,6 +981,61 @@ class SectionTitle extends StatelessWidget {
       );
 }
 
+// ---------- قص قوائم التمرير ----------
+//  القوائم كانت بلا قص حتى ما ينقص توهج التركيز، فالعناصر اللي برة القائمة جانت تنرسم فوق
+//  باقي الواجهة (بطاقات فوق القائمة الجانبية، صفوف فوق العناوين). هسه القص على اتجاه التمرير
+//  بس، والاتجاه الثاني يبقى مفتوح حتى التوهج والتكبير يبينون كاملين.
+
+class AxisClip extends StatelessWidget {
+  final Axis axis;
+  final double bleed;
+  final Widget child;
+  const AxisClip({super.key, required this.axis, required this.child, this.bleed = 80});
+
+  @override
+  Widget build(BuildContext context) => ClipRect(clipper: _AxisClipper(axis, bleed), child: child);
+}
+
+class _AxisClipper extends CustomClipper<Rect> {
+  final Axis axis;
+  final double bleed;
+  _AxisClipper(this.axis, this.bleed);
+
+  @override
+  Rect getClip(Size s) => axis == Axis.horizontal ? Rect.fromLTRB(0, -bleed, s.width, s.height + bleed) : Rect.fromLTRB(-bleed, 0, s.width + bleed, s.height);
+
+  @override
+  bool shouldReclip(_AxisClipper o) => o.axis != axis || o.bleed != bleed;
+}
+
+// ---------- حقول النص بالريموت ----------
+//  حقل النص يبلع الأسهم (يحرك المؤشر)، فبالريموت تعلگ داخله. هذي العقدة تشوف المفاتيح
+//  قبل الحقل: أعلى/أسفل تطلع منه دائماً، ويسار/يمين تطلع إذا المؤشر بطرف النص.
+
+FocusNode tvFieldNode(TextEditingController c) => FocusNode(onKeyEvent: (node, e) => tvFieldKeys(node, e, c));
+
+KeyEventResult tvFieldKeys(FocusNode node, KeyEvent e, TextEditingController c) {
+  if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
+  final k = e.logicalKey;
+  TraversalDirection? dir;
+  if (k == LogicalKeyboardKey.arrowDown) {
+    dir = TraversalDirection.down;
+  } else if (k == LogicalKeyboardKey.arrowUp) {
+    dir = TraversalDirection.up;
+  } else if (k == LogicalKeyboardKey.arrowLeft || k == LogicalKeyboardKey.arrowRight) {
+    final sel = c.selection;
+    final len = c.text.length;
+    final atEnd = !sel.isValid || (sel.isCollapsed && sel.baseOffset >= len);
+    final atStart = !sel.isValid || (sel.isCollapsed && sel.baseOffset <= 0);
+    // النص عربي (من اليمين): اليسار = نهاية النص، واليمين = بدايته
+    if (k == LogicalKeyboardKey.arrowLeft && atEnd) dir = TraversalDirection.left;
+    if (k == LogicalKeyboardKey.arrowRight && atStart) dir = TraversalDirection.right;
+  }
+  if (dir == null) return KeyEventResult.ignored;
+  node.focusInDirection(dir);
+  return KeyEventResult.handled;
+}
+
 // ---------- صفوف مربوطة مباشرة بمفاتيح الإعدادات ----------
 
 AppState get _s => AppState.I;
@@ -1053,6 +1108,7 @@ Future<String?> promptText(BuildContext context,
           const SizedBox(height: 24),
           TextField(
             controller: ctrl,
+            focusNode: tvFieldNode(ctrl),
             autofocus: true,
             obscureText: obscure,
             keyboardType: number ? TextInputType.number : TextInputType.text,
@@ -1091,7 +1147,7 @@ Future<void> showActions(BuildContext context, String title, List<(String, Objec
         alignment: align,
         inset: inset,
         padding: const EdgeInsets.all(34),
-        child: NavZone(child: SingleChildScrollView(
+        child: NavZone(child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
           clipBehavior: Clip.none,
           child: SizedBox(
             width: width - 68,
@@ -1114,7 +1170,7 @@ Future<void> showActions(BuildContext context, String title, List<(String, Objec
                 ),
             ]),
           ),
-        )),
+        ))),
       ),
     ),
   );
@@ -1158,6 +1214,7 @@ Object weatherIcon(String kind) => switch (kind) {
       'moon' => Lu.moon,
       'cloud' => Lu.cloud,
       'fog' => Lu.cloudFog,
+      'dust' => Lu.haze,
       'storm' => Lu.cloudLightning,
       _ => Lu.cloudRain,
     };

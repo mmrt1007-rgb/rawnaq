@@ -56,6 +56,12 @@ Future<void> main() async {
     } catch (e, st) {
       logError(e, st);
     }
+    // أول لقطة: نفس ثيم شاشة أندرويد الأولى، ونعرف إذا الجهاز توه مشتغل (أقل من ٣ دقايق)
+    try {
+      final b = await NativeBridge.splashInfo().timeout(const Duration(seconds: 1));
+      AppState.I.bootDay = b.day;
+      AppState.I.coldBoot = b.uptimeMs > 0 && b.uptimeMs < 180000;
+    } catch (_) {}
     // حارس الإقلاع: ٣ تشغيلات متقاربة = توقف متكرر → الوضع الآمن
     AppState.I.safe = await BootGuard.check();
     // شاشة الإقلاع تطلع فوراً، والتهيئة تكمل خلفها — ما تبقى الشاشة سوداء أبداً
@@ -109,13 +115,31 @@ class _RootState extends State<_Root> {
     if (shown < const Duration(milliseconds: 700)) await Future.delayed(const Duration(milliseconds: 700) - shown);
     // «انتظر الكتابة»: القلم يكمل اسم رونق ونقاطه ثم تفتح الواجهة (بحد أقصى المدة + ثانية ونص)
     final cfg = AppState.I.cfg;
-    if (cfg.b('loader.write') && cfg.b('loader.waitBoot')) {
+    final wait = switch (cfg.s('loader.waitBoot')) { 'always' => true, 'off' => false, _ => AppState.I.coldBoot };
+    _syncSplash();
+    AppState.I.addListener(_syncSplash);
+    if (cfg.b('loader.write') && wait) {
       final max = Duration(milliseconds: ((loaderWriteSeconds() + 1.5) * 1000).round());
       try {
         await BootWriting.done.timeout(max);
       } catch (_) {}
     }
     if (mounted) setState(() => _ready = true);
+  }
+
+  // أول لقطة بالتشغيل الجاي تتبع ثيم رونق الحالي (ليلي/نهاري)، حتى يبقى الانتقال بلا قفزة
+  bool? _splashDay;
+  void _syncSplash() {
+    final day = !AppState.I.palette.night;
+    if (_splashDay == day) return;
+    _splashDay = day;
+    NativeBridge.setSplashTheme(day).catchError((_) => false);
+  }
+
+  @override
+  void dispose() {
+    AppState.I.removeListener(_syncSplash);
+    super.dispose();
   }
 
   @override

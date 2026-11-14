@@ -23,10 +23,10 @@ class WallCategory {
     WallCategory('mountains', 'جبال', Lu.mountain, 'Featured pictures of mountains'),
     WallCategory('coasts', 'بحار وشواطئ', Lu.waves, 'Featured pictures of coasts'),
     WallCategory('water', 'أنهار وبحيرات', Lu.droplets, 'Featured pictures of bodies of water'),
+    WallCategory('waterfalls', 'شلالات', Lu.droplets, 'Featured pictures of waterfalls'),
+    WallCategory('sunsets', 'غروب وشفق', Lu.sunset, 'Featured pictures of sunsets'),
     WallCategory('plants', 'نباتات وزهور', Lu.flower, 'Featured pictures of plants'),
-    WallCategory('mammals', 'حيوانات', Lu.paw, 'Featured pictures of mammals'),
-    WallCategory('birds', 'طيور', Lu.bird, 'Featured pictures of birds'),
-    WallCategory('food', 'طعام', Lu.utensils, 'Featured pictures of food'),
+    WallCategory('night', 'ليل وأضواء', Lu.moonStar, 'Featured night photography'),
     WallCategory('astronomy', 'سماء وفضاء', Lu.telescope, 'Featured pictures of astronomy'),
     WallCategory('mosques', 'مساجد وعمارة', Lu.landmark, 'Quality images of mosques'),
   ];
@@ -128,7 +128,9 @@ class WallpaperFetcher {
 
   /// الفئات المفعّلة.
   static List<WallCategory> enabled() {
-    final ids = AppState.I.cfg.s('walls.cats').split(',').where((e) => e.isNotEmpty).toSet();
+    // الفئات القديمة (حيوانات، طيور، طعام) تبدلت بفئات أنيق للواجهة
+    const renamed = {'mammals': 'waterfalls', 'birds': 'night', 'food': 'sunsets'};
+    final ids = AppState.I.cfg.s('walls.cats').split(',').where((e) => e.isNotEmpty).map((e) => renamed[e] ?? e).toSet();
     return WallCategory.all.where((c) => ids.contains(c.id)).toList();
   }
 
@@ -159,7 +161,7 @@ class WallpaperFetcher {
       final enabledIds = cats.map((e) => e.id).toSet();
       for (final f in autos) {
         final cat = f.uri.pathSegments.last.split('-').elementAtOrNull(1) ?? '';
-        if (WallCategory.of(cat) != null && !enabledIds.contains(cat)) _delete(f);
+        if (!enabledIds.contains(cat)) _delete(f);
       }
       autos = _autoFiles(dir);
       while (autos.length > target) {

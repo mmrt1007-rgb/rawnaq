@@ -279,7 +279,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
                 // الارتفاع يتبع الشاشة الفعلية فما تنقص النافذة على أي شاشة
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height - 140),
-                  child: NavZone(child: SingleChildScrollView(
+                  child: NavZone(child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                   clipBehavior: Clip.none,
                   padding: const EdgeInsets.all(5),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -328,7 +328,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
                     cChoice<String>('وضع الألوان', 'saver.colorMode', const [('auto', 'تلقائي حسب الخلفية'), ('manual', 'يدوي')]),
                     if (s.cfg.s('saver.colorMode') == 'manual') cColor('لون الساعة', 'saver.clockColor'),
                   ]),
-                )),
+                ))),
                 ),
               ),
             ),
@@ -391,6 +391,9 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
       ),
     );
   }
+
+  /// المساحة اللي تحجزها آية/حكمة اليوم بأسفل الشاشة، حتى الساعة والمواقيت ما تنزل فوقها.
+  double get _dailyRoom => (!widget.editing && Daily.onSaver) ? (s.cfg.s('daily.size') == 'large' ? 190.0 : 172.0) : 0.0;
 
   /// الخلفية + التخطيط المختار (مشترك بين الشاشة الحقيقية والمعاينة).
   List<Widget> _scene() {
@@ -484,7 +487,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
         ),
       Positioned.fill(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(110, 140, 110, 120),
+          padding: EdgeInsets.fromLTRB(110, 140, 110, max(120.0, _dailyRoom)),
           child: AnimatedSlide(
             offset: drift,
             duration: s.anim(9000),
@@ -580,7 +583,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
         ),
       ),
       Padding(
-        padding: const EdgeInsets.fromLTRB(110, 70, 110, 64),
+        padding: EdgeInsets.fromLTRB(110, 70, 110, max(64.0, _dailyRoom)),
         child: AnimatedSlide(
           offset: drift,
           duration: s.anim(9000),
@@ -671,7 +674,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
       children.add(_element(id, ink, wrap));
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 120, vertical: 90),
+      padding: EdgeInsets.fromLTRB(120, 90, 120, max(90.0, _dailyRoom)),
       child: AnimatedAlign(
         alignment: align,
         duration: s.anim(1400),

@@ -125,7 +125,7 @@ class _WallpapersScreenState extends State<WallpapersScreen> {
                         final w = (box.maxWidth - bleed * 2 - gap * (cols - 1)) / cols;
                         final h = w * 9 / 16;
                         final dpr = MediaQuery.devicePixelRatioOf(context);
-                        return SingleChildScrollView(
+                        return AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                           clipBehavior: Clip.none,
                           padding: const EdgeInsets.all(bleed),
                           child: Wrap(spacing: gap, runSpacing: gap, children: [
@@ -191,7 +191,7 @@ class _WallpapersScreenState extends State<WallpapersScreen> {
                                 ),
                               ),
                           ]),
-                        );
+                        ));
                       }),
               ),
             ]),

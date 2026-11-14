@@ -407,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
           final m0 = _fitWidth(box.maxWidth, cols);
           final m = TileMetrics(m0.width, onDark: true);
           final shelf = box.maxHeight - m.totalHeight - m.bleed * 2 - 24;
-          return SingleChildScrollView(
+          return AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
             controller: _tvScroll,
             clipBehavior: Clip.none,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -462,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
               ),
               SizedBox(height: box.maxHeight * 0.35),
             ]),
-          );
+          ));
         }),
       ),
     ]);
@@ -476,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
     final items = _items;
     final others = s.installed.map((a) => a.package).where((pkg) => !s.isFavorite(pkg)).toList();
     final m = TileMetrics(c.d('tile.size').clamp(160.0, 260.0));
-    return SingleChildScrollView(
+    return AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
       clipBehavior: Clip.none,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _RibbonTop(onHome: () => _focusIndex(0)),
@@ -538,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
         Text(c.s('home.sectionTitle').isEmpty ? 'المفضلة' : c.s('home.sectionTitle'), style: Fonts.body(26, p.ink, weight: FontWeight.w600)),
         SizedBox(
           height: m.totalHeight + m.bleed * 2,
-          child: SingleChildScrollView(
+          child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             padding: EdgeInsets.all(m.bleed),
@@ -548,13 +548,13 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                 _tile(id, i, m),
               ],
             ]),
-          ),
+          )),
         ),
         if (others.isNotEmpty) ...[
           Text('كل التطبيقات', style: Fonts.body(26, p.ink, weight: FontWeight.w600)),
           SizedBox(
             height: m.totalHeight + m.bleed * 2,
-            child: SingleChildScrollView(
+            child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               padding: EdgeInsets.all(m.bleed),
@@ -574,11 +574,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                   ),
                 ],
               ]),
-            ),
+            )),
           ),
         ],
       ]),
-    );
+    ));
   }
 
   Widget _cinemaLayout() {
@@ -609,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
       const SizedBox(height: 18),
       SizedBox(
         height: m.totalHeight + m.bleed * 2,
-        child: SingleChildScrollView(
+        child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
           padding: EdgeInsets.all(m.bleed),
@@ -619,7 +619,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
               _tile(id, i, m),
             ],
           ]),
-        ),
+        )),
       ),
     ]);
   }
@@ -735,7 +735,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
         child: SizedBox(
           height: m.totalHeight + m.bleed * 2,
-          child: SingleChildScrollView(
+          child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             padding: EdgeInsets.all(m.bleed),
@@ -745,7 +745,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                 _tile(id, i, m),
               ],
             ]),
-          ),
+          )),
         ),
       ),
     ]);
@@ -934,7 +934,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
       ]),
       SizedBox(
         height: m.totalHeight + m.bleed * 2,
-        child: SingleChildScrollView(
+        child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
           padding: EdgeInsets.all(m.bleed),
@@ -944,7 +944,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
               _tile(id, i, m),
             ],
           ]),
-        ),
+        )),
       ),
       if (c.b('home.showHint'))
         Center(child: Text('أعلى: التنقل · يمين ويسار: التطبيقات · موافق: فتح', style: Fonts.body(18, p.muted))),
@@ -1086,7 +1086,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                 ),
                 child: SizedBox(
                   height: m.totalHeight + m.bleed * 2,
-                  child: SingleChildScrollView(
+                  child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     clipBehavior: Clip.none,
                     padding: EdgeInsets.all(m.bleed),
@@ -1096,7 +1096,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                         _tile(id, i, m),
                       ],
                     ]),
-                  ),
+                  )),
                 ),
               ),
             ),
@@ -1191,7 +1191,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
       const SizedBox(height: 24),
       SizedBox(
         height: m.totalHeight + m.bleed * 2,
-        child: SingleChildScrollView(
+        child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
           padding: EdgeInsets.all(m.bleed),
@@ -1201,7 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
               _tile(id, i, m),
             ],
           ]),
-        ),
+        )),
       ),
     ]);
   }
@@ -1274,7 +1274,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
             child: LayoutBuilder(builder: (context, box) {
               final m0 = _fitWidth(box.maxWidth, cols);
               final m = TileMetrics(m0.width);
-              return SingleChildScrollView(
+              return AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
                 clipBehavior: Clip.none,
                 padding: EdgeInsets.all(m.bleed),
                 child: Wrap(
@@ -1282,7 +1282,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                   runSpacing: c.d('tile.gap'),
                   children: [for (final (i, id) in items.indexed) _tile(id, i, m)],
                 ),
-              );
+              ));
             }),
           ),
         ]),
@@ -1310,7 +1310,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
         _sectionHeader(),
         SizedBox(
           height: m.totalHeight + m.bleed * 2,
-          child: SingleChildScrollView(
+          child: AxisClip(axis: Axis.horizontal, child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             padding: EdgeInsets.all(m.bleed),
@@ -1320,7 +1320,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                 _tile(id, i, m),
               ],
             ]),
-          ),
+          )),
         ),
       ],
     );
@@ -1337,7 +1337,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
           const Expanded(child: Align(alignment: AlignmentDirectional.centerStart, child: FittedBox(fit: BoxFit.scaleDown, child: _ClockBlock()))),
           SizedBox(
             width: m.width * m.focusScale + m.bleed * 2 + 60,
-            child: SingleChildScrollView(
+            child: AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
               clipBehavior: Clip.none,
               padding: EdgeInsets.symmetric(vertical: m.bleed + 20, horizontal: m.bleed),
               child: Column(children: [
@@ -1346,7 +1346,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
                   _tile(id, i, m),
                 ],
               ]),
-            ),
+            )),
           ),
         ]),
       ),
@@ -1387,7 +1387,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
         child: LayoutBuilder(builder: (context, box) {
           final m = _fitWidth(box.maxWidth, cols);
           final gap = s.cfg.d('tile.gap');
-          return SingleChildScrollView(
+          return AxisClip(axis: Axis.vertical, child: SingleChildScrollView(
             clipBehavior: Clip.none,
             padding: EdgeInsets.all(m.bleed),
             child: Wrap(
@@ -1395,7 +1395,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
               runSpacing: gap,
               children: [for (final (i, id) in items.indexed) _tile(id, i, m)],
             ),
-          );
+          ));
         }),
       ),
     ]);
