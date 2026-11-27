@@ -1,0 +1,17 @@
+[
+  {"family": "Readex Pro", "weights": [200, 300, 400, 500, 600, 700]},
+  {"family": "Alexandria", "weights": [200, 300, 400, 500, 600, 700]},
+  {"family": "IBM Plex Sans Arabic", "weights": [200, 300, 400, 500, 600, 700]},
+  {"family": "Noto Kufi Arabic", "weights": [300, 400, 500, 600, 700]},
+  {"family": "Noto Sans Arabic", "weights": [300, 400, 500, 600, 700]},
+  {"family": "Tajawal", "weights": [300, 400, 500, 700]},
+  {"family": "Almarai", "weights": [300, 400, 700]},
+  {"family": "Cairo", "weights": [300, 400, 500, 600, 700]},
+  {"family": "El Messiri", "weights": [400, 500, 600, 700]},
+  {"family": "Reem Kufi", "weights": [400, 500, 600, 700]},
+  {"family": "Changa", "weights": [300, 400, 500, 600, 700]},
+  {"family": "Zain", "weights": [300, 400, 700]},
+  {"family": "Rubik", "weights": [300, 400, 500, 600, 700]},
+  {"family": "Amiri", "weights": [400, 700]},
+  {"family": "Noto Naskh Arabic", "weights": [400, 500, 600, 700]}
+]

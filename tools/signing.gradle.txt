@@ -1,0 +1,14 @@
+
+// RAWNAQ_SIGNING: مفتاح النشر الخاص من android/key.properties (إذا موجود)، وإلا مفتاح التطوير
+def rawnaqProps = new Properties()
+def rawnaqKeyFile = rootProject.file('key.properties')
+if (rawnaqKeyFile.exists()) { rawnaqKeyFile.withInputStream { rawnaqProps.load(it) } }
+if (rawnaqProps['storeFile']) {
+    android.signingConfigs.create('rawnaqRelease') {
+        storeFile file(rawnaqProps['storeFile'])
+        storePassword rawnaqProps['storePassword']
+        keyAlias rawnaqProps['keyAlias']
+        keyPassword rawnaqProps['keyPassword']
+    }
+    android.buildTypes.release.signingConfig android.signingConfigs.rawnaqRelease
+}
