@@ -1,0 +1,16 @@
+// RAWNAQ_SIGNING3: private release key from android/key.properties when present, otherwise the debug key
+val rawnaqProps = Properties()
+val rawnaqPropsFile = rootProject.file("key.properties")
+if (rawnaqPropsFile.exists()) FileInputStream(rawnaqPropsFile).use { rawnaqProps.load(it) }
+
+#--INSIDE-ANDROID--
+    signingConfigs {
+        if (rawnaqProps.getProperty("storeFile") != null) {
+            create("rawnaqRelease") {
+                storeFile = file(rawnaqProps.getProperty("storeFile"))
+                storePassword = rawnaqProps.getProperty("storePassword")
+                keyAlias = rawnaqProps.getProperty("keyAlias")
+                keyPassword = rawnaqProps.getProperty("keyPassword")
+            }
+        }
+    }
