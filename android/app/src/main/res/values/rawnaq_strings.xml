@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guard_label">حارس رونق</string>
+    <string name="guard_description">يرجّع واجهة رونق إذا طلعت واجهة كوكل بعد تحديث النظام. ما يقرأ أي محتوى من الشاشة.</string>
+    <string name="notif_label">مركز تنبيهات رونق</string>
+</resources>

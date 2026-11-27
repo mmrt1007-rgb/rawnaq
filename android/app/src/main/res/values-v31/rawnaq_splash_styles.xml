@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- أندرويد ١٢+: أيقونة البداية هي أول لقطة من حركة الكتابة، بدون خلفية للأيقونة (٢٨٨dp، دائرة ١٩٢dp) -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/rawnaq_splash</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_first</item>
+    </style>
+    <style name="LaunchThemeDay" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background_day</item>
+        <item name="android:windowSplashScreenBackground">@color/rawnaq_splash_day</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_first_day</item>
+    </style>
+</resources>
