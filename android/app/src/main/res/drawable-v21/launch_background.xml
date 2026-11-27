@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- شاشة رونق الأولى قبل ما يرسم Flutter (ليلي): لون ثابت وأول لقطة من الكتابة بالوسط -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/rawnaq_splash" />
+    <item android:width="288dp" android:height="288dp" android:gravity="center" android:drawable="@drawable/splash_first" />
+</layer-list>
